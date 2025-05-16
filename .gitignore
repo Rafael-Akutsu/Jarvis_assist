@@ -1,0 +1,6 @@
+.ven
+.venv
+.env
+__pycache__/
+.venv_py313
+command_cache.json
