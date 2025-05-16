@@ -38,10 +38,41 @@ except Exception as e:
 # Initialize TTS
 try:
     tts = pyttsx3.init()
+
+    # --- Configuração da Voz ---
+    # ATENÇÃO: O ID ABAIXO ('HKEY_LOCAL_MACHINE\...') é uma tentativa comum de voz masculina em inglês no Windows.
+    # ELE PODE NÃO EXISTIR OU NÃO SER A VOZ QUE VOCÊ QUER NO SEU SISTEMA ESPECÍFICO.
+    # Se a voz não mudar ou der erro, você PRECISARÁ usar o método de listar as vozes no seu PC.
+
+    tts.setProperty('voice', 'HHKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\MSTTS_V110_ptBR_Heloisa') # <-- TENTATIVA DE VOZ MASCULINA EM INGLÊS
+
+    # --- Outras tentativas comuns (DESCOMENTE UMA POR VEZ SE A ACIMA NÃO FUNCIONAR OU VOCÊ QUISER OUTRA): ---
+    # tts.setProperty('voice', 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_EN-US_ZIRA_11.0')  # <-- TENTATIVA DE VOZ FEMININA EM INGLÊS
+    # tts.setProperty('voice', 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\MSTTS_V110_ptBR_Heloisa') # <-- TENTATIVA DE VOZ FEMININA EM PORTUGUÊS (PODE SER A PADRÃO)
+    # tts.setProperty('voice', 'HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Speech\Voices\Tokens\TTS_MS_PT-BR_Daniela_11.0') # <-- TENTATIVA DE VOZ FEMININA EM PORTUGUÊS (OUTRA)
+    # Pode haver outras! Se nenhuma dessas funcionar, você DEVE listar as vozes (veja abaixo).
+
+
+    # --- Código para LISTAR as vozes (USE SE OS IDs ACIMA NÃO FUNCIONAREM!) ---
+    # Para ver quais IDs realmente existem no SEU computador, COMENTE TODAS as linhas tts.setProperty('voice', ...) acima.
+    # Em seguida, DESCOMENTE as 5 linhas ABAIXO e execute o script UMA VEZ.
+    # Anote o ID da voz que você quer da lista que aparecer no terminal.
+    # Depois COMENTE as 5 linhas ABAIXO de volta e DESCOMENTE uma linha tts.setProperty('voice', ...) acima,
+    # substituindo o ID que está lá pelo ID que você anotou.
+    # voices = tts.getProperty('voices')
+    # print("\n--- VOZES DISPONÍVEIS NO SEU SISTEMA (Para usar, copie o ID e coloque na linha tts.setProperty acima) ---")
+    # for i, voice in enumerate(voices):
+    #     print(f"{i}: ID: {voice.id}")
+    #     print(f"   Nome: {voice.name}")
+    #     print(f"   Línguas: {voice.languages}")
+    # print("-------------------------------------------------------------------------------------------------------\n")
+
+
     print("✅ TTS (Text-to-Speech) inicializado.")
 except Exception as e:
     print(f"❌ Erro ao inicializar TTS: {e}")
     tts = None # Define como None para que possamos checar antes de usar
+
 
 # Speech recognizer
 recognizer = sr.Recognizer()
@@ -85,8 +116,12 @@ print("✅ Webcam inicializada com sucesso.")
 def speak(text):
     if tts:
         print(f"[ASSISTENTE]: {text}")
-        tts.say(text)
-        tts.runAndWait()
+        # Adicionado tratamento de exceção básico ao falar
+        try:
+            tts.say(text)
+            tts.runAndWait()
+        except Exception as e:
+            print(f"❌ Erro ao falar: {e}")
     else:
         print(f"[ASSISTENTE - SEM VOZ]: {text}")
 
@@ -99,11 +134,11 @@ def execute_system_action(command_text):
         query = cmd.replace("pesquise", "").replace("pesquisar", "").replace("no youtube", "").strip()
         if query:
             encoded_query = urllib.parse.quote_plus(query)
-            url = f"https://www.youtube.com/results?search_query={encoded_query}"
+            url = f"https://www.youtube.com/results?search_query={encoded_query}" # Corrigido para URL de pesquisa real do YouTube
             webbrowser.open(url)
             return f"Pesquisando '{query}' no YouTube."
         else:
-            webbrowser.open("https://www.youtube.com")
+            webbrowser.open("https://www.youtube.com") # Corrigido para URL principal real do YouTube
             return "Abrindo YouTube. O que você gostaria de pesquisar?"
 
     # Comando: "pesquise [termo] no google" ou "pesquisar [termo] no google"
@@ -132,7 +167,7 @@ def execute_system_action(command_text):
             return f"Erro ao tentar minimizar a janela: {e}"
 
     elif "youtube" in cmd: # Comando genérico para abrir YouTube
-        webbrowser.open("https://www.youtube.com")
+        webbrowser.open("https://www.youtube.com") # Corrigido para URL principal real do YouTube
         return "Abrindo YouTube."
     elif "google" in cmd: # Comando genérico para abrir Google
         webbrowser.open("https://www.google.com")
@@ -211,7 +246,7 @@ def listen_command(duration=5):
         print(f"[USUÁRIO DISSE]: '{text}'")
         return text
     except sr.UnknownValueError:
-        print("[MICROFONE] Não entendi o áudio.")
+        print("[MICROFONE] Não entendi o audio.")
         speak("Desculpe, não consegui entender o que você disse.")
         return None
     except sr.RequestError as e:
@@ -320,7 +355,9 @@ try:
             fingers_up = detector.fingersUp(hand)
             # print(f"[DEBUG] Dedos levantados: {fingers_up}") # Log para depuração do gesto
 
-            # Gesto: Indicador e médio levantados (Paz e amor / V de vitória)
+            # Gesto: Indicador e médio levantados (Paz e amor / V de vitória) - dedos 1 e 2 (índices 1 e 2 na lista 0-based)
+            # A lista fingers_up tem 5 elementos para polegar, indicador, medio, anelar, mindinho.
+            # [0, 1, 1, 0, 0] significa: polegar para baixo/fechado (0), indicador para cima (1), médio para cima (1), anelar para baixo (0), mindinho para baixo (0).
             if fingers_up == [0, 1, 1, 0, 0]:
                 if not gesture_listen: # Só ativa se não estiver ouvindo
                     with listen_lock: # Garante que a lógica de escuta não execute múltiplas vezes
@@ -331,7 +368,8 @@ try:
                     command_recognized = listen_command(duration=5) # Escuta por 5 segundos
 
                     if command_recognized:
-                        speak(f"Você disse: {command_recognized}. Processando...")
+                        # speak(f"Você disse: {command_recognized}. Processando...") # Evita eco
+                        print(f"[INFO] Comando recebido: '{command_recognized}'. Processando...")
                         # 1. Tenta executar diretamente
                         action_feedback = execute_system_action(command_recognized)
 
@@ -347,8 +385,8 @@ try:
                             # Se nem a execução direta nem o Gemini retornaram algo útil
                             speak("Desculpe, não consegui entender ou executar esse comando.")
                     else:
-                        # listen_command já deve ter falado que não entendeu
-                        pass # speak("Não recebi nenhum comando claro.") # Ou uma mensagem aqui se preferir
+                        # listen_command já deve ter falado que não entendeu ou teve timeout
+                        pass
 
                     # Pausa após o processamento do comando para evitar reativação imediata pelo mesmo gesto
                     print("--- Fim do processamento do comando ---")
@@ -367,7 +405,7 @@ try:
 
 finally:
     print("➡️ Liberando recursos...")
-    if cap.isOpened():
+    if cap and cap.isOpened(): # Adicionada checagem se cap existe e está aberto
         cap.release()
     cv2.destroyAllWindows()
     if tts:
