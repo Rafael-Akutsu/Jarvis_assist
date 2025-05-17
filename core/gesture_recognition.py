@@ -16,6 +16,8 @@ DEBOUNCE = {
     "rock": 5.0,
     "Dois dedos":     0.0,
     "Mao aberta":     0.0,
+    "tres ultimos": 5.0,
+    "dog": 5.0,
 }
 
 # Armazena o timestamp da última execução de cada gesto
@@ -26,7 +28,7 @@ def reconhecer_gestos(dedos):
         return "Punho fechado"
     if dedos == [1,1,0,0,1]:
         return "rock"
-    if dedos == [1,1,0,1,0]:
+    if dedos == [0,1,1,1,0]:
         return "tres dedos"
     if dedos == [1,1,1,1,1]:
         return "Mao aberta"
@@ -34,6 +36,11 @@ def reconhecer_gestos(dedos):
         return "Indicador"
     if dedos == [0,1,1,0,0]:
         return "Dois dedos"
+    if dedos == [0,0,1,1,1]:
+        return "tres ultimos"
+    if dedos == [0,1,0,1,1]:
+        return "dog"
+    
     return "Gesto desconhecido"
 
 def executar_acao(gesto):
@@ -66,6 +73,14 @@ def executar_acao(gesto):
 
     elif gesto == "Mao aberta":
         pyautogui.press("volumedown")
+
+    elif gesto == "tres ultimos":
+        webbrowser.open_new_tab("https://www.youtube.com/")
+    
+    elif gesto == "dog":
+        pyautogui.hotkey("alt", "space")  
+        time.sleep(0.2)                   
+        pyautogui.press("n")  
 
 # Loop principal
 while True:
